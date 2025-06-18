@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import "dotenv/config"
 import express from "express"
-import { readFileSync } from "fs"
+import { readFileSync, unlinkSync } from "fs"
 import multer from "multer";
 import path from "path";
 
@@ -45,26 +45,56 @@ app.post('/generate-text', async (req, res) => {
     }
 });
 
-const imageGeneratePart = (filePath) => ({
+const fileGeneratePath = (filePath, mimeType) => ({
     inlineData: {
         data: readFileSync(filePath).toString('base64'),
-        mimeType: 'image/jpeg',
+        mimeType: mimeType,
     }
 })
 
 app.post('/generate-from-image', upload.single('image'), async (req, res) => {
     const { prompt } = req.body || "describe the picture";
-    const image = imageGeneratePart(req.file.path);
+    const image = fileGeneratePath(req.file.path, req.file.mimetype);
     try {
         const result = await model2.generateContent([prompt, image]);
         const response = result.response;
         const text = response.text();
         res.status(200).json({ output: text });
     } catch (error) {
-        res.status(500).json({ error: error.message || "An error occurred while generating the image." });
+        res.status(500).json({ error: error.message || "An error occurred while describing the image." });
+    } finally {
+        // Clean up the uploaded file
+        if (req.file) {
+            unlinkSync(req.file.path, (err) => {
+                if (err) {
+                    console.error("Error deleting file:", err);
+                }
+            });
+        }
     }
 });
 
+app.post('/generate-from-document', upload.single('document'), async (req, res) => {
+    const { prompt } = req.body || "describe the document";
+    const document = fileGeneratePath(req.file.path, req.file.mimetype);
+    try {
+        const result = await model2.generateContent([prompt, document]);
+        const response = result.response;
+        const text = response.text();
+        res.status(200).json({ output: text });
+    } catch (error) {
+        res.status(500).json({ error: error.message || "An error occurred while analyzing the document." });
+    }finally {
+        // Clean up the uploaded file
+        if (req.file) {
+            unlinkSync(req.file.path, (err) => {
+                if (err) {
+                    console.error("Error deleting file:", err);
+                }
+            });
+        }
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
