@@ -84,8 +84,28 @@ app.post('/generate-from-document', upload.single('document'), async (req, res) 
         res.status(200).json({ output: text });
     } catch (error) {
         res.status(500).json({ error: error.message || "An error occurred while analyzing the document." });
-    }finally {
-        // Clean up the uploaded file
+    } finally {
+        if (req.file) {
+            unlinkSync(req.file.path, (err) => {
+                if (err) {
+                    console.error("Error deleting file:", err);
+                }
+            });
+        }
+    }
+});
+
+app.post('/generate-from-audio', upload.single('audio'), async (req, res) => {
+    const { prompt } = req.body || "describe the audio";
+    const audio = fileGeneratePath(req.file.path, req.file.mimetype);
+    try {
+        const result = await model2.generateContent([prompt, audio]);
+        const response = result.response;
+        const text = response.text();
+        res.status(200).json({ output: text });
+    } catch (error) {
+        res.status(500).json({ error: error.message || "An error occurred while analyzing the audio." });
+    } finally {
         if (req.file) {
             unlinkSync(req.file.path, (err) => {
                 if (err) {
