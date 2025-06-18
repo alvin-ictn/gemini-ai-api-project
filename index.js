@@ -14,7 +14,11 @@ app.use(express.json());
 const ai2 = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model2 = ai2.getGenerativeModel({
-    model: "models/gemini-1.5-flash"
+    model: "models/gemini-1.5-flash",
+    generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 1024,
+    }
 })
 
 // setting multer for file uploads
