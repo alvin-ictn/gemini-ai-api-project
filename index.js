@@ -6,10 +6,14 @@ import express from "express"
 import { readFileSync, unlinkSync } from "fs"
 import multer from "multer";
 import path from "path";
+import cors from "cors"
 
 const port = process.env.PORT || 3300;
+
 const app = express();
+app.use(cors())
 app.use(express.json());
+app.use(express.static("public"))
 
 const ai2 = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -33,9 +37,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
     res.send(`File uploaded successfully: ${file.originalname}`);
 });
 
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
+
 
 app.post('/generate-text', async (req, res) => {
     const { prompt } = req.body || "write story about ai and magic";
